@@ -51,6 +51,8 @@ int main()
         states[i] = false;
     }
 
+    int x;
+    
     while (1)
     {
     }
