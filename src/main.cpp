@@ -1,10 +1,17 @@
 #include <mbed.h>
+#include "PID.h"
 
+// PID stuff 
+#define RATE 0.002
+
+//Kc, Ti, Td, interval
+
+// Pid End 
 
 InterruptIn left(D3);
 InterruptIn right(D4);
-InterruptIn rear(D5);
-PwmOut sparkCut(D6);
+InterruptIn rear(D12);
+PwmOut ignitionOut(D6);
 
 #define ledpin LED3
 #define Pi  3.1415
@@ -16,7 +23,9 @@ const double circ = diameter*Pi;
 double rightSpeed = 0;
 double leftSpeed = 0;
 double rearSpeed = 0;
+
 double frontSpeed = 0;
+
 unsigned short delta = 0;
 unsigned char highByte = 0;
 unsigned char lowByte = 0;
@@ -28,6 +37,7 @@ CAN can1(D10, D2); // CAN bus pins
 Timer tf1;
 Timer tf2;
 Timer r;
+Timer accelTimer;
 
 long time1 = 1;
 long time2 = 1;
@@ -38,6 +48,8 @@ int leftCount = 0;
 int rearCount = 0;
 
 double speed;
+
+
 
 double calculateSpeed(double ticks, int micros);
   
@@ -92,6 +104,10 @@ void left_triggered()
 void rear_triggered()
 {
 
+    out = !out;
+
+    double prev;
+
     if (rearCount == 0) {
         r.start();
         rearCount++;
@@ -103,9 +119,13 @@ void rear_triggered()
                         
         time3 = r.read_us();
         rearSpeed = calculateSpeed(25.0, time3);
+        //rearAccel = calculateAcceleration(prev, speed, time3);
+
 
         rearCount = 0;
         r.reset();
+
+        prev = rearSpeed; 
     }
     else  {
         rearCount++;    
@@ -129,14 +149,28 @@ double calculateSpeed(double ticks, int micros) {
 
     speed = revs*2.8553; // 2.8553 is the number that converts rev/s to linear speed 
                         // (wheel size dependent)
+
+
     return speed;
     
 }
 
+double calculateAcceleration(double prev, double newSpeed, double t) {
+
+    double t2 = t/1000000.0;
+
+    double accel = (newSpeed - prev)/(t2);
+
+    return accel; 
+}
+
 int main()
 {
+    PID controller(0.0, 0.0, 1.0, 0.02);
 
     out.write(0);
+
+    float pidResult = 0.0;
 
     left.mode(PullUp);
     right.mode(PullUp);
@@ -144,15 +178,23 @@ int main()
 
     right.rise(&right_triggered);
     left.rise(&left_triggered);
-    rear.rise(&rear_triggered);
+    rear.fall(&rear_triggered);
 
+    controller.setInputLimits(-30.0, 30.0);
+    controller.setOutputLimits(0.0, 1.0);
+    controller.setMode(0); //manual mode
+    //controller.setTunings(1.0,1.0,1.0);
+    //We want difference to be 0 mph
+    controller.setSetPoint(15.0);
+
+    
     while (1) {
        
-
-        // wait(1);
         // printf("%f\n",rightSpeed);
         // printf("%f\n",leftSpeed);
-        // printf("%f\n\n",rearSpeed);
+        printf("%s","Rear speed: ");
+        printf("%f\n",rearSpeed);
+
 
         if (leftSpeed >= rightSpeed) {
             frontSpeed = leftSpeed;
@@ -160,34 +202,25 @@ int main()
         else {
             frontSpeed = rightSpeed;
         }
+        printf("%s","Front speed: ");
+        printf("%f\n\n",frontSpeed);
 
+        /*
         delta = (frontSpeed / rearSpeed) *100;
         printf("%f\n",delta);
         highByte = (delta >> 8) & 0xFF;
         lowByte = delta & 0xFF;
+        */
+       float diff = rearSpeed - frontSpeed;
+       diff = abs(diff);
 
+       printf("%f\n",diff);
+       controller.setProcessValue(diff);
+       pidResult = controller.compute();
 
-        can1.frequency(250000);
-        can1.mode(CAN::Normal);
+       printf("%f\n\n", pidResult);
+       ignitionOut.write(pidResult);
 
-        wait(1);
-        CANMessage msg;
-        // if (can1.read(msg)){
-        //     printf("\n%d", msg.id);
-        //     printf("%s", " ");
-        //     for (int i = 0; i < msg.len; i++){
-        //         printf("%d ", msg.data[i]);
-        //     }
-        //      printf("\n");
-        // }
-        msg.id = 1;
-        msg.data[0] = round(rightSpeed);
-        msg.data[1] = round(leftSpeed);
-        msg.data[2] = round(rearSpeed);
-        msg.data[3] = round (lowByte);
-        msg.data[4] = round (highByte);
-
-        can1.write(msg);
 
     }   
 }
