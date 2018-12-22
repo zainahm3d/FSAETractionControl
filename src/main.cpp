@@ -1,17 +1,12 @@
 #include <mbed.h>
 #include "PID.h"
+#include <FastPWM.h>
 
-// PID stuff 
-#define RATE 0.002
-
-//Kc, Ti, Td, interval
-
-// Pid End 
 
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D12);
-PwmOut ignitionOut(D6);
+FastPWM ignitionOut(D5,-1);
 
 #define ledpin LED3
 #define Pi  3.1415
@@ -32,12 +27,13 @@ unsigned char lowByte = 0;
 
 DigitalOut out(ledpin);
 
-CAN can1(D10, D2); // CAN bus pins
+//CAN can1(D10, D2); // CAN bus pins
+PID controller(1.0, 0.0, 0.0, 0.01);
 
 Timer tf1;
 Timer tf2;
 Timer r;
-Timer accelTimer;
+//Timer accelTimer;
 
 long time1 = 1;
 long time2 = 1;
@@ -50,11 +46,12 @@ int rearCount = 0;
 double speed;
 
 
-
 double calculateSpeed(double ticks, int micros);
   
 void right_triggered()
 {
+
+    out = !out;
 
     if (rightCount == 0) {
         tf1.start();
@@ -79,6 +76,8 @@ void right_triggered()
 
 void left_triggered()
 {
+
+    out = !out;
 
     if (leftCount == 0) {
         tf2.start();
@@ -106,8 +105,6 @@ void rear_triggered()
 
     out = !out;
 
-    double prev;
-
     if (rearCount == 0) {
         r.start();
         rearCount++;
@@ -121,11 +118,9 @@ void rear_triggered()
         rearSpeed = calculateSpeed(25.0, time3);
         //rearAccel = calculateAcceleration(prev, speed, time3);
 
-
         rearCount = 0;
         r.reset();
 
-        prev = rearSpeed; 
     }
     else  {
         rearCount++;    
@@ -155,6 +150,7 @@ double calculateSpeed(double ticks, int micros) {
     
 }
 
+/*
 double calculateAcceleration(double prev, double newSpeed, double t) {
 
     double t2 = t/1000000.0;
@@ -163,14 +159,13 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 
     return accel; 
 }
+*/
 
 int main()
 {
-    PID controller(0.0, 0.0, 1.0, 0.02);
+    
 
-    out.write(0);
-
-    float pidResult = 0.0;
+    float pidResult = 1.0;
 
     left.mode(PullUp);
     right.mode(PullUp);
@@ -180,20 +175,22 @@ int main()
     left.rise(&left_triggered);
     rear.fall(&rear_triggered);
 
-    controller.setInputLimits(-30.0, 30.0);
-    controller.setOutputLimits(0.0, 1.0);
-    controller.setMode(0); //manual mode
-    //controller.setTunings(1.0,1.0,1.0);
-    //We want difference to be 0 mph
-    controller.setSetPoint(15.0);
+    controller.setInputLimits(0.0, 40.0);
+    controller.setOutputLimits(1.0, 1000.0);
+    controller.setMode(1); //auto mode
+    //controller.setTunings(3.0,10.0,1.0);
+    
+    controller.setSetPoint(0.0);
 
+    ignitionOut.period_ms(1000);
+    ignitionOut.write(0.5);
     
     while (1) {
        
-        // printf("%f\n",rightSpeed);
-        // printf("%f\n",leftSpeed);
-        printf("%s","Rear speed: ");
-        printf("%f\n",rearSpeed);
+        wait_ms(20);
+
+        //printf("%s","Rear speed: ");
+        //printf("%f\n",rearSpeed);
 
 
         if (leftSpeed >= rightSpeed) {
@@ -202,8 +199,8 @@ int main()
         else {
             frontSpeed = rightSpeed;
         }
-        printf("%s","Front speed: ");
-        printf("%f\n\n",frontSpeed);
+        //printf("%s","Front speed: ");
+        //printf("%f\n\n",frontSpeed);
 
         /*
         delta = (frontSpeed / rearSpeed) *100;
@@ -211,16 +208,43 @@ int main()
         highByte = (delta >> 8) & 0xFF;
         lowByte = delta & 0xFF;
         */
-       float diff = rearSpeed - frontSpeed;
-       diff = abs(diff);
 
-       printf("%f\n",diff);
-       controller.setProcessValue(diff);
-       pidResult = controller.compute();
+       
+       if (frontSpeed < 2.0) {
+          
+           ignitionOut.period(1.0);
+           ignitionOut.write(0.5);
+       }
 
-       printf("%f\n\n", pidResult);
-       ignitionOut.write(pidResult);
+        else {       
+            float diff = abs(rearSpeed - frontSpeed);
 
+            printf("%f\n",diff);
+            controller.setProcessValue(diff);
+            pidResult = controller.compute();
+
+            //printf("%f\n\n", pidResult);
+            float freq = pidResult;
+            float period = 1.0/freq;
+            //printf("%f\n", freq);
+            //printf("%f\n", period);
+
+
+            ignitionOut.period(period);
+            ignitionOut.write(0.5);
+
+        }
+        
+    //    if (diff >=10.0){
+    //        ignitionOut.period(.002);
+    //        ignitionOut.write(.5);
+    //    } else if (diff >= 20){
+    //        ignitionOut.period(.001);
+    //        ignitionOut.write(.5);
+    //    } else {
+    //        ignitionOut.period(3);
+    //        ignitionOut.write(.5);
+    //    }
 
     }   
 }
