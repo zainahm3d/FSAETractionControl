@@ -2,18 +2,17 @@
 #include "PID.h"
 #include <FastPWM.h>
 
-
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D12);
-FastPWM ignitionOut(D5,-1);
+FastPWM ignitionOut(D5, -1);
 
 #define ledpin LED3
-#define Pi  3.1415
+#define Pi 3.1415
 
 const double diameter = 1.3333333; // in feet
-const double radius = 0.666666; // in feet
-const double circ = diameter*Pi;
+const double radius = 0.666666;    // in feet
+const double circ = diameter * Pi;
 
 double rightSpeed = 0;
 double leftSpeed = 0;
@@ -28,7 +27,7 @@ unsigned char lowByte = 0;
 DigitalOut out(ledpin);
 
 //CAN can1(D10, D2); // CAN bus pins
-PID controller(1.0, 0.0, 0.0, 0.01);
+PID controller(1.0, 2.0, 2.0, 0.02); //this is undercompensating
 
 Timer tf1;
 Timer tf2;
@@ -45,109 +44,115 @@ int rearCount = 0;
 
 double speed;
 
-
 double calculateSpeed(double ticks, int micros);
-  
+
 void right_triggered()
 {
 
     out = !out;
 
-    if (rightCount == 0) {
+    if (rightCount == 0)
+    {
         tf1.start();
         rightCount++;
     }
 
-    else if (rightCount == 5) {
+    else if (rightCount == 5)
+    {
 
         tf1.stop();
-                
+
         time1 = tf1.read_us();
         rightSpeed = calculateSpeed(5.0, time1);
 
         rightCount = 0;
         tf1.reset();
     }
-    else  {
-        rightCount++;    
+    else
+    {
+        rightCount++;
     }
 }
-
 
 void left_triggered()
 {
 
     out = !out;
 
-    if (leftCount == 0) {
+    if (leftCount == 0)
+    {
         tf2.start();
         leftCount++;
     }
 
-    else if (leftCount == 5) {
+    else if (leftCount == 5)
+    {
 
         tf2.stop();
-                        
+
         time2 = tf2.read_us();
         leftSpeed = calculateSpeed(5.0, time2);
 
         leftCount = 0;
         tf2.reset();
     }
-    else  {
-        leftCount++;    
+    else
+    {
+        leftCount++;
     }
 }
-
 
 void rear_triggered()
 {
 
     out = !out;
 
-    if (rearCount == 0) {
+    if (rearCount == 0)
+    {
         r.start();
         rearCount++;
     }
 
-    else if (rearCount == 25) {
+    else if (rearCount == 25)
+    {
 
         r.stop();
-                        
+
         time3 = r.read_us();
         rearSpeed = calculateSpeed(25.0, time3);
         //rearAccel = calculateAcceleration(prev, speed, time3);
 
         rearCount = 0;
         r.reset();
-
     }
-    else  {
-        rearCount++;    
+    else
+    {
+        rearCount++;
     }
 }
 
-double calculateSpeed(double ticks, int micros) {
+double calculateSpeed(double ticks, int micros)
+{
 
     double revs;
-    double speed; 
-    double seconds = micros/1000000.0;
+    double speed;
+    double seconds = micros / 1000000.0;
 
-    double ticksPerSecond = (ticks/seconds); // ticks per second 
+    double ticksPerSecond = (ticks / seconds); // ticks per second
 
-    if (ticks == 5) {
-        revs = ticksPerSecond/25.0; //revs per second
+    if (ticks == 5)
+    {
+        revs = ticksPerSecond / 25.0; //revs per second
     }
-    else {
-        revs =  ticksPerSecond/100.0;
+    else
+    {
+        revs = ticksPerSecond / 100.0;
     }
 
-    speed = revs*2.8553; // 2.8553 is the number that converts rev/s to linear speed 
-                        // (wheel size dependent)
-
+    speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear speed
+                           // (wheel size dependent)
 
     return speed;
-    
 }
 
 /*
@@ -163,7 +168,6 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 
 int main()
 {
-    
 
     float pidResult = 1.0;
 
@@ -176,27 +180,29 @@ int main()
     rear.fall(&rear_triggered);
 
     controller.setInputLimits(0.0, 40.0);
-    controller.setOutputLimits(1.0, 1000.0);
-    controller.setMode(1); //auto mode
+    controller.setOutputLimits(1.0, 750.0);
+    controller.setMode(0); //manual mode
     //controller.setTunings(3.0,10.0,1.0);
-    
-    controller.setSetPoint(0.0);
+
+    controller.setSetPoint(8.0); //mph difference for testing, should be a percentage
 
     ignitionOut.period_ms(1000);
     ignitionOut.write(0.5);
-    
-    while (1) {
-       
+
+    while (1)
+    {
+
         wait_ms(20);
 
         //printf("%s","Rear speed: ");
         //printf("%f\n",rearSpeed);
 
-
-        if (leftSpeed >= rightSpeed) {
+        if (leftSpeed >= rightSpeed)
+        {
             frontSpeed = leftSpeed;
         }
-        else {
+        else
+        {
             frontSpeed = rightSpeed;
         }
         //printf("%s","Front speed: ");
@@ -209,42 +215,28 @@ int main()
         lowByte = delta & 0xFF;
         */
 
-       
-       if (frontSpeed < 2.0) {
-          
-           ignitionOut.period(1.0);
-           ignitionOut.write(0.5);
-       }
+        if (frontSpeed < 2.0)
+        {
 
-        else {       
+            ignitionOut.period(1.0);
+            ignitionOut.write(0.5);
+        }
+
+        else
+        {
             float diff = abs(rearSpeed - frontSpeed);
 
-            printf("%f\n",diff);
+            printf("%f\n", diff);
             controller.setProcessValue(diff);
             pidResult = controller.compute();
 
             //printf("%f\n\n", pidResult);
             float freq = pidResult;
-            float period = 1.0/freq;
+            float period = 1.0 / freq;
             //printf("%f\n", freq);
             //printf("%f\n", period);
-
-
             ignitionOut.period(period);
             ignitionOut.write(0.5);
-
         }
-        
-    //    if (diff >=10.0){
-    //        ignitionOut.period(.002);
-    //        ignitionOut.write(.5);
-    //    } else if (diff >= 20){
-    //        ignitionOut.period(.001);
-    //        ignitionOut.write(.5);
-    //    } else {
-    //        ignitionOut.period(3);
-    //        ignitionOut.write(.5);
-    //    }
-
-    }   
+    }
 }
