@@ -5,7 +5,8 @@
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D12);
-FastPWM ignitionOut(D5, -1);
+// FastPWM ignitionOut(D5, -1);
+DigitalOut ig(D5);
 
 #define ledpin LED3
 #define Pi 3.1415
@@ -27,7 +28,6 @@ unsigned char lowByte = 0;
 DigitalOut out(ledpin);
 
 //CAN can1(D10, D2); // CAN bus pins
-PID controller(1.0, 2.0, 2.0, 0.02); //this is undercompensating
 
 Timer tf1;
 Timer tf2;
@@ -179,20 +179,10 @@ int main()
     left.rise(&left_triggered);
     rear.fall(&rear_triggered);
 
-    controller.setInputLimits(0.0, 40.0);
-    controller.setOutputLimits(1.0, 750.0);
-    controller.setMode(0); //manual mode
-    //controller.setTunings(3.0,10.0,1.0);
-
-    controller.setSetPoint(8.0); //mph difference for testing, should be a percentage
-
-    ignitionOut.period_ms(1000);
-    ignitionOut.write(0.5);
+    ig = 0;
 
     while (1)
     {
-
-        wait_ms(20);
 
         //printf("%s","Rear speed: ");
         //printf("%f\n",rearSpeed);
@@ -218,25 +208,28 @@ int main()
         if (frontSpeed < 2.0)
         {
 
-            ignitionOut.period(1.0);
-            ignitionOut.write(0.5);
+            ig = 0;
         }
 
         else
         {
             float diff = abs(rearSpeed - frontSpeed);
 
-            printf("%f\n", diff);
-            controller.setProcessValue(diff);
-            pidResult = controller.compute();
-
-            //printf("%f\n\n", pidResult);
-            float freq = pidResult;
-            float period = 1.0 / freq;
-            //printf("%f\n", freq);
-            //printf("%f\n", period);
-            ignitionOut.period(period);
-            ignitionOut.write(0.5);
+            if (diff > 5.0)
+            {
+            }
+            else if (diff > 10.0)
+            {
+                ig = 1;
+            }
+            else if (diff >= 20.0)
+            {
+                ig = 1;
+            }
+            else
+            {
+                ig = 0;
+            }
         }
     }
 }
