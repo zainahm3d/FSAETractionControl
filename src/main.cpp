@@ -2,6 +2,13 @@
 #include "PID.h"
 #include <FastPWM.h>
 
+#include "nRF24L01.h"
+#include "RF24.h"
+#include <SPI.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D12);
@@ -26,6 +33,16 @@ unsigned char highByte = 0;
 unsigned char lowByte = 0;
 
 DigitalOut out(ledpin);
+
+#define nrf_CE A1
+#define nrf_CSN A0
+#define spi_SCK A4
+#define spi_MOSI A6
+#define spi_MISO A5
+
+RF24 radio(spi_MOSI, spi_MISO, spi_SCK, nrf_CE, nrf_CSN);
+
+const uint64_t pipe = 0xE8E8F0F0E1LL;
 
 //CAN can1(D10, D2); // CAN bus pins
 
@@ -169,15 +186,21 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 int main()
 {
 
+    radio.begin();
+    radio.openWritingPipe(pipe);
+    radio.setPALevel(RF24_PA_HIGH);
+    radio.setDataRate(RF24_250KBPS);
+    radio.stopListening();
+
     float pidResult = 1.0;
 
     left.mode(PullUp);
-    right.mode(PullUp);
+    // right.mode(PullUp);
     rear.mode(PullUp);
 
-    right.rise(&right_triggered);
-    left.rise(&left_triggered);
-    rear.fall(&rear_triggered);
+    right.fall(&right_triggered);
+    // left.fall(&left_triggered);
+    // rear.fall(&rear_triggered);
 
     ig = 0;
 
@@ -187,6 +210,9 @@ int main()
         //printf("%s","Rear speed: ");
         //printf("%f\n",rearSpeed);
 
+        float num = 0;
+        radio.write(&num, sizeof(num));
+
         if (leftSpeed >= rightSpeed)
         {
             frontSpeed = leftSpeed;
@@ -195,34 +221,14 @@ int main()
         {
             frontSpeed = rightSpeed;
         }
-        //printf("%s","Front speed: ");
-        //printf("%f\n\n",frontSpeed);
 
-        /*
-        delta = (frontSpeed / rearSpeed) *100;
-        printf("%f\n",delta);
-        highByte = (delta >> 8) & 0xFF;
-        lowByte = delta & 0xFF;
-        */
-
-        if (frontSpeed < 2.0)
-        {
-
-            ig = 0;
-        }
-
-        else
         {
             float diff = abs(rearSpeed - frontSpeed);
 
             if (diff > 5.0)
             {
             }
-            else if (diff > 10.0)
-            {
-                ig = 1;
-            }
-            else if (diff >= 20.0)
+            else if (diff > 9.0)
             {
                 ig = 1;
             }
@@ -230,6 +236,9 @@ int main()
             {
                 ig = 0;
             }
+
+            wait(.1);
+            printf("%f\n", diff);
         }
     }
 }
