@@ -1,6 +1,5 @@
 #include <mbed.h>
 #include "PID.h"
-#include <FastPWM.h>
 
 #include "nRF24L01.h"
 #include "RF24.h"
@@ -9,14 +8,13 @@
 #include <stdio.h>
 #include <string.h>
 
-InterruptIn left(D3);
-InterruptIn right(D4);
-InterruptIn rear(D12);
-// FastPWM ignitionOut(D5, -1);
-DigitalOut ig(D5);
+InterruptIn left(D11);
+InterruptIn right(D12);
+//InterruptIn rear(D12);
+DigitalOut ig(D6);
 
-#define ledpin LED3
-#define Pi 3.1415
+ #define ledpin LED3
+ #define Pi 3.1415
 
 const double diameter = 1.3333333; // in feet
 const double radius = 0.666666;    // in feet
@@ -28,9 +26,9 @@ double rearSpeed = 0;
 
 double frontSpeed = 0;
 
-unsigned short delta = 0;
-unsigned char highByte = 0;
-unsigned char lowByte = 0;
+// unsigned short delta = 0;
+// unsigned char highByte = 0;
+// unsigned char lowByte = 0;
 
 DigitalOut out(ledpin);
 
@@ -68,6 +66,12 @@ void right_triggered()
 
     out = !out;
 
+    float test = tf1.read();
+    if (test > 2.5) {
+        rightSpeed = 0.0;
+        tf1.reset();
+    }
+
     if (rightCount == 0)
     {
         tf1.start();
@@ -96,6 +100,12 @@ void left_triggered()
 
     out = !out;
 
+    float test = tf2.read();
+    if (test > 2.5) {
+        leftSpeed = 0.0;
+        tf2.reset();
+    }
+
     if (leftCount == 0)
     {
         tf2.start();
@@ -123,6 +133,12 @@ void rear_triggered()
 {
 
     out = !out;
+
+    float test = r.read();
+    if (test > 2.5) {
+        rearSpeed = 0.0;
+        r.reset();
+    }
 
     if (rearCount == 0)
     {
@@ -192,26 +208,24 @@ int main()
     radio.setDataRate(RF24_250KBPS);
     radio.stopListening();
 
-    float pidResult = 1.0;
-
-    left.mode(PullUp);
-    // right.mode(PullUp);
-    rear.mode(PullUp);
+    //left.mode(PullUp);
+    right.mode(PullUp);
+    //rear.mode(PullUp);
 
     right.fall(&right_triggered);
-    // left.fall(&left_triggered);
-    // rear.fall(&rear_triggered);
+    //left.fall(&left_triggered);
+    //rear.fall(&rear_triggered);
 
     ig = 0;
 
     while (1)
     {
 
-        //printf("%s","Rear speed: ");
-        //printf("%f\n",rearSpeed);
-
-        float num = 0;
-        radio.write(&num, sizeof(num));
+        wait(0.2);
+        
+        //out = !out;
+        // printf("%s","Rear speed: ");
+        // printf("%f\n",rearSpeed);
 
         if (leftSpeed >= rightSpeed)
         {
@@ -221,8 +235,19 @@ int main()
         {
             frontSpeed = rightSpeed;
         }
+        // frontSpeed = 1.5;
+        // rearSpeed = 1.2;
 
-        {
+        // printf("%s","Rear speed: ");
+        // printf("%f\n",rearSpeed);
+
+        // int f = round(frontSpeed);
+        // int r = round(rearSpeed);
+        // int n = '\n';
+
+        radio.write(&frontSpeed, sizeof(frontSpeed));
+        //radio.write(&rearSpeed, sizeof(rearSpeed));
+        
             float diff = abs(rearSpeed - frontSpeed);
 
             if (diff > 5.0)
@@ -237,8 +262,8 @@ int main()
                 ig = 0;
             }
 
-            wait(.1);
-            printf("%f\n", diff);
-        }
+            // wait(.1);
+            // printf("%f\n", diff);
+        
     }
 }
