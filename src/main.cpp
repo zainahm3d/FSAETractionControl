@@ -208,14 +208,15 @@ int main()
     radio.setDataRate(RF24_250KBPS);
     radio.stopListening();
 
-    //left.mode(PullUp);
-    right.mode(PullUp);
-    //rear.mode(PullUp);
-
     right.fall(&right_triggered);
     //left.fall(&left_triggered);
     //rear.fall(&rear_triggered);
 
+ 
+    //left.mode(PullUp);
+    right.mode(PullUp);
+    //rear.mode(PullUp);
+ 
     ig = 0;
 
     while (1)
