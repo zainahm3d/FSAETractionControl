@@ -8,9 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
-InterruptIn left(D11);
-InterruptIn right(D12);
-//InterruptIn rear(D12);
+// InterruptIn left(D11);
+// InterruptIn right(D12);
+// InterruptIn rear(D12);
+
 DigitalOut ig(D6);
 
  #define ledpin LED3
@@ -32,13 +33,13 @@ double frontSpeed = 0;
 
 DigitalOut out(ledpin);
 
-#define nrf_CE A1
-#define nrf_CSN A0
-#define spi_SCK A4
-#define spi_MOSI A6
-#define spi_MISO A5
+// #define nrf_CE A1
+// #define nrf_CSN A0
+// #define spi_SCK A4
+// #define spi_MOSI A6
+// #define spi_MISO A5
 
-RF24 radio(spi_MOSI, spi_MISO, spi_SCK, nrf_CE, nrf_CSN);
+// RF24 radio(spi_MOSI, spi_MISO, spi_SCK, nrf_CE, nrf_CSN);
 
 const uint64_t pipe = 0xE8E8F0F0E1LL;
 
@@ -202,19 +203,19 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 int main()
 {
 
-    radio.begin();
-    radio.openWritingPipe(pipe);
-    radio.setPALevel(RF24_PA_HIGH);
-    radio.setDataRate(RF24_250KBPS);
-    radio.stopListening();
+    // radio.begin();
+    // radio.openWritingPipe(pipe);
+    // radio.setPALevel(RF24_PA_HIGH);
+    // radio.setDataRate(RF24_250KBPS);
+    // radio.stopListening();
 
-    right.fall(&right_triggered);
+    //right.fall(&right_triggered);
     //left.fall(&left_triggered);
     //rear.fall(&rear_triggered);
 
  
     //left.mode(PullUp);
-    right.mode(PullUp);
+    //right.mode(PullUp);
     //rear.mode(PullUp);
  
     ig = 0;
@@ -246,7 +247,7 @@ int main()
         // int r = round(rearSpeed);
         // int n = '\n';
 
-        radio.write(&frontSpeed, sizeof(frontSpeed));
+        //radio.write(&frontSpeed, sizeof(frontSpeed));
         //radio.write(&rearSpeed, sizeof(rearSpeed));
         
             float diff = abs(rearSpeed - frontSpeed);
