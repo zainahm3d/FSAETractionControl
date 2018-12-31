@@ -1,5 +1,4 @@
 #include <mbed.h>
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +17,6 @@ double rightSpeed = 0;
 double leftSpeed = 0;
 double rearSpeed = 0;
 double frontSpeed = 0;
-
 
 Timer tf1;
 Timer tf2;
@@ -155,22 +153,12 @@ double calculateSpeed(double ticks, int micros)
 
     speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear speed
                            // (wheel size dependent)
-
     return speed;
 }
 
+void selectFrontWheel() {
 
-int main()
-{
-
-    ig = 0;
-
-    while (1)
-    {
-
-
-
-        if (leftSpeed >= rightSpeed)
+    if (leftSpeed >= rightSpeed)
         {
             frontSpeed = leftSpeed;
         }
@@ -178,25 +166,43 @@ int main()
         {
             frontSpeed = rightSpeed;
         }
- 
+}
 
-        // printf("%s","Rear speed: ");
-        // printf("%f\n",rearSpeed);
-        
-            float diff = abs(rearSpeed - frontSpeed);
+void adjustSpeed() {
 
-            if (diff > 5.0)
-            {
-            }
-            else if (diff > 9.0)
-            {
-                ig = 1;
-            }
-            else
-            {
-                ig = 0;
-            }
+    float diff = abs(rearSpeed - frontSpeed);
 
-        
+    if (diff > 5.0)
+    {
+
+    }
+    else if (diff > 9.0)
+    {
+        ig = 1;
+    }
+    else
+    {
+        ig = 0;
+    }   
+
+}
+
+
+int main()
+{
+
+   ig = 0;
+
+    while (1)
+    {
+
+        right_triggered();
+        left_triggered();
+        rear_triggered();
+
+        selectFrontWheel();  //checks if left or right wheel is faster
+        adjustSpeed();   //cuts engine based on difference of wheel speeds
+
+
     }
 }
