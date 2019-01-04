@@ -3,11 +3,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ledpin LED3
 #define Pi 3.1415
 
+DigitalIn right(D10);
+DigitalIn left(D11);
+DigitalIn rear(D12);
+
 DigitalOut ig(D6);
-DigitalOut out(ledpin);
+DigitalOut out(LED3);
 
 const double diameter = 1.3333333; // in feet
 const double radius = 0.666666;    // in feet
@@ -30,107 +33,121 @@ int rightCount = 0;
 int leftCount = 0;
 int rearCount = 0;
 
+int leftPrev;
+int rightPrev;
+int rearPrev;
 
 double calculateSpeed(double ticks, int micros);
 
+void setInitialStates() {
+
+    leftPrev = left.read();
+    rightPrev = right.read();
+    rearPrev = rear.read();
+    
+}
 
 void right_triggered()
 {
-    out = !out;
+   int x = right.read();
+    if ((x == 0 && rightPrev == 1) || (x == 1 && rightPrev == 0)) {
 
-    float test = tf1.read();
-    if (test > 2.5) {
-        rightSpeed = 0.0;
-        tf1.reset();
-    }
-
-    if (rightCount == 0)
-    {
-        tf1.start();
+        out = !out;
         rightCount++;
-    }
+        rightPrev = x;
 
-    else if (rightCount == 5)
-    {
-        tf1.stop();
+        // makes sure speed doesnt get stuck when not moving 
+        float test = tf1.read();
+        if (test > 2.5) {
+            rightSpeed = 0.0;
+            tf1.reset();
+        }
 
-        time1 = tf1.read_us();
-        rightSpeed = calculateSpeed(5.0, time1);
+        if (rightCount == 1) {
+            tf1.start();
+        }
 
-        rightCount = 0;
-        tf1.reset();
-    }
-    else
-    {
-        rightCount++;
+        else if (rightCount == 6)  {
+
+            tf1.stop();
+
+            time1 = tf1.read_us();
+            rightSpeed = calculateSpeed(5.0, time1);
+       
+            rightCount = 0;
+            tf1.reset();
+        }
+       
     }
 }
 
 void left_triggered()
 {
-    out = !out;
+   int x = left.read();
+    if ((x == 0 && leftPrev == 1) || (x == 1 && leftPrev == 0)) {
 
-    float test = tf2.read();
-    if (test > 2.5) {
-        leftSpeed = 0.0;
-        tf2.reset();
-    }
-
-    if (leftCount == 0)
-    {
-        tf2.start();
+        out = !out;
         leftCount++;
-    }
+        leftPrev = x;
 
-    else if (leftCount == 5)
-    {
+        // makes sure speed doesnt get stuck when not moving 
+        float test = tf2.read();
+        if (test > 2.5) {
+            leftSpeed = 0.0;
+            tf2.reset();
+        }
 
-        tf2.stop();
+        if (leftCount == 1) {
+            tf2.start();
+        }
 
-        time2 = tf2.read_us();
-        leftSpeed = calculateSpeed(5.0, time2);
+        else if (leftCount == 6)  {
 
-        leftCount = 0;
-        tf2.reset();
-    }
-    else
-    {
-        leftCount++;
+            tf2.stop();
+
+            time2 = tf2.read_us();
+            leftSpeed = calculateSpeed(5.0, time2);
+       
+            leftCount = 0;
+            tf2.reset();
+        }
+       
     }
 }
 
 void rear_triggered()
 {
-    out = !out;
+    int x = rear.read();
+    if ((x == 0 && rearPrev == 1) || (x == 1 && rearPrev == 0)) {
 
-    float test = r.read();
-    if (test > 2.5) {
-        rearSpeed = 0.0;
-        r.reset();
-    }
-
-    if (rearCount == 0)
-    {
-        r.start();
+        out = !out;
         rearCount++;
+        rearPrev = x;
+
+        // makes sure speed doesnt get stuck when not moving 
+        float test = r.read();
+        if (test > 2.5) {
+            rearSpeed = 0.0;
+            r.reset();
+        }
+
+        if (rearCount == 1) {
+            r.start();
+        }
+
+        else if (rearCount == 26)  {
+
+            r.stop();
+
+            time3 = r.read_us();
+            rearSpeed = calculateSpeed(25.0, time3);
+       
+            rearCount = 0;
+            r.reset();
+        }
+       
     }
-
-    else if (rearCount == 25)
-    {
-
-        r.stop();
-
-        time3 = r.read_us();
-        rearSpeed = calculateSpeed(25.0, time3);
-        //rearAccel = calculateAcceleration(prev, speed, time3);
-
-        rearCount = 0;
-        r.reset();
-    }
-    else
-    {
-        rearCount++;
-    }
+    
 }
 
 double calculateSpeed(double ticks, int micros)
@@ -191,7 +208,8 @@ void adjustSpeed() {
 int main()
 {
 
-   ig = 0;
+    ig = 0;
+    setInitialStates();
 
     while (1)
     {
