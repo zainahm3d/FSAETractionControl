@@ -216,11 +216,12 @@ int main() {
       frontSpeed = rightSpeed;
     }
 
-    num++;
-    if (testTimer.read() >= 1) {
-      printf("\ndone\n");
-      printf("\n%d\n", num);
-      break;
-    }
+    // uncomment to test loops in 1 second
+    // num++;
+    // if (testTimer.read() >= 1) {
+    //   printf("\ndone\n");
+    //   printf("\n%d\n", num);
+    //   break;
+    // }
   }
 }
