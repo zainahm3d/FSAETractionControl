@@ -35,18 +35,14 @@ int rightCount = 0;
 int leftCount = 0;
 int rearCount = 0;
 
+int rightPrev = 1;
 int leftPrev = 0;
-int rightPrev = 0;
 int rearPrev = 0;
+int rightCurrent = 0;
+int leftCurrent = 0;
+int rearCurrent = 0;
 
 double calculateSpeed(double ticks, int micros);
-
-void setInitialStates() {
-
-  leftPrev = left.read();
-  rightPrev = right.read();
-  rearPrev = rear.read();
-}
 
 void right_triggered() {
   out = !out;
@@ -178,7 +174,6 @@ void adjustSpeed() {
 int main() {
 
   ig = 0;
-  setInitialStates();
 
   testTimer.reset();
   testTimer.start();
@@ -189,25 +184,25 @@ int main() {
   left.mode(PullUp);
   rear.mode(PullUp);
 
+  out = 1;
+
   while (1) {
     // only read the inputs once per loop to save cycles
-    int rightCurrent = right.read();
-    int leftCurrent = left.read();
-    int rearCurrent = rear.read();
+    rightCurrent = right.read();
+    leftCurrent = left.read();
+    rearCurrent = rear.read();
 
+    // detect only the rising edges
     if (rightCurrent == 1 && rightPrev == 0) {
       right_triggered();
-      rightPrev = rightCurrent;
     }
 
     if (leftCurrent == 1 && leftPrev == 0) {
       left_triggered();
-      leftPrev = leftCurrent;
     }
 
     if (rearCurrent == 1 && rearPrev == 0) {
       rear_triggered();
-      rearPrev = rearCurrent;
     }
 
     if (leftSpeed >= rightSpeed) {
@@ -215,6 +210,10 @@ int main() {
     } else {
       frontSpeed = rightSpeed;
     }
+
+    rightPrev = rightCurrent; // set the flags to the current state
+    leftPrev = leftCurrent;
+    rearPrev = rearCurrent;
 
     // uncomment to test loops in 1 second
     // num++;
