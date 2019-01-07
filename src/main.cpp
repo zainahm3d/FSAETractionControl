@@ -1,6 +1,6 @@
 #include <mbed.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define Pi 3.1415
@@ -25,6 +25,8 @@ Timer tf1;
 Timer tf2;
 Timer r;
 
+Timer testTimer;
+
 long time1 = 1;
 long time2 = 1;
 long time3 = 1;
@@ -33,194 +35,192 @@ int rightCount = 0;
 int leftCount = 0;
 int rearCount = 0;
 
-int leftPrev;
-int rightPrev;
-int rearPrev;
+int leftPrev = 0;
+int rightPrev = 0;
+int rearPrev = 0;
 
 double calculateSpeed(double ticks, int micros);
 
 void setInitialStates() {
 
-    leftPrev = left.read();
-    rightPrev = right.read();
-    rearPrev = rear.read();
-    
+  leftPrev = left.read();
+  rightPrev = right.read();
+  rearPrev = rear.read();
 }
 
-void right_triggered()
-{
-   int x = right.read();
-    if ((x == 0 && rightPrev == 1) || (x == 1 && rightPrev == 0)) {
+void right_triggered() {
+  out = !out;
 
-        out = !out;
-        rightCount++;
-        rightPrev = x;
+  float test = tf1.read();
+  if (test > 2.5) {
+    rightSpeed = 0.0;
+    tf1.reset();
+  }
 
-        // makes sure speed doesnt get stuck when not moving 
-        float test = tf1.read();
-        if (test > 2.5) {
-            rightSpeed = 0.0;
-            tf1.reset();
-        }
+  if (rightCount == 0) {
+    tf1.start();
+    rightCount++;
+  }
 
-        if (rightCount == 1) {
-            tf1.start();
-        }
+  else if (rightCount == 5) {
 
-        else if (rightCount == 6)  {
+    tf1.stop();
 
-            tf1.stop();
+    time1 = tf1.read_us();
+    rightSpeed = calculateSpeed(5.0, time1);
 
-            time1 = tf1.read_us();
-            rightSpeed = calculateSpeed(5.0, time1);
-       
-            rightCount = 0;
-            tf1.reset();
-        }
-       
-    }
+    rightCount = 0;
+    tf1.reset();
+  } else {
+    rightCount++;
+  }
 }
 
-void left_triggered()
-{
-   int x = left.read();
-    if ((x == 0 && leftPrev == 1) || (x == 1 && leftPrev == 0)) {
+void left_triggered() {
 
-        out = !out;
-        leftCount++;
-        leftPrev = x;
+  out = !out;
 
-        // makes sure speed doesnt get stuck when not moving 
-        float test = tf2.read();
-        if (test > 2.5) {
-            leftSpeed = 0.0;
-            tf2.reset();
-        }
+  float test = tf2.read();
+  if (test > 2.5) {
+    leftSpeed = 0.0;
+    tf2.reset();
+  }
 
-        if (leftCount == 1) {
-            tf2.start();
-        }
+  if (leftCount == 0) {
+    tf2.start();
+    leftCount++;
+  }
 
-        else if (leftCount == 6)  {
+  else if (leftCount == 5) {
 
-            tf2.stop();
+    tf2.stop();
 
-            time2 = tf2.read_us();
-            leftSpeed = calculateSpeed(5.0, time2);
-       
-            leftCount = 0;
-            tf2.reset();
-        }
-       
-    }
+    time2 = tf2.read_us();
+    leftSpeed = calculateSpeed(5.0, time2);
+
+    leftCount = 0;
+    tf2.reset();
+  } else {
+    leftCount++;
+  }
 }
 
-void rear_triggered()
-{
-    int x = rear.read();
-    if ((x == 0 && rearPrev == 1) || (x == 1 && rearPrev == 0)) {
+void rear_triggered() {
+  out = !out;
 
-        out = !out;
-        rearCount++;
-        rearPrev = x;
+  float test = r.read();
+  if (test > 2.5) {
+    rearSpeed = 0.0;
+    r.reset();
+  }
 
-        // makes sure speed doesnt get stuck when not moving 
-        float test = r.read();
-        if (test > 2.5) {
-            rearSpeed = 0.0;
-            r.reset();
-        }
+  if (rearCount == 0) {
+    r.start();
+    rearCount++;
+  }
 
-        if (rearCount == 1) {
-            r.start();
-        }
+  else if (rearCount == 25) {
 
-        else if (rearCount == 26)  {
+    r.stop();
 
-            r.stop();
+    time3 = r.read_us();
+    rearSpeed = calculateSpeed(25.0, time3);
+    // rearAccel = calculateAcceleration(prev, speed, time3);
 
-            time3 = r.read_us();
-            rearSpeed = calculateSpeed(25.0, time3);
-       
-            rearCount = 0;
-            r.reset();
-        }
-       
-    }
-    
+    rearCount = 0;
+    r.reset();
+  } else {
+    rearCount++;
+  }
 }
 
-double calculateSpeed(double ticks, int micros)
-{
+double calculateSpeed(double ticks, int micros) {
 
-    double revs;
-    double speed;
-    double seconds = micros / 1000000.0;
+  double revs;
+  double speed;
+  double seconds = micros / 1000000.0;
 
-    double ticksPerSecond = (ticks / seconds); // ticks per second
+  double ticksPerSecond = (ticks / seconds); // ticks per second
 
-    if (ticks == 5)
-    {
-        revs = ticksPerSecond / 25.0; //revs per second
-    }
-    else
-    {
-        revs = ticksPerSecond / 100.0;
-    }
+  if (ticks == 5) {
+    revs = ticksPerSecond / 25.0; // revs per second
+  } else {
+    revs = ticksPerSecond / 100.0;
+  }
 
-    speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear speed
-                           // (wheel size dependent)
-    return speed;
+  speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear
+                         // speed (wheel size dependent)
+  return speed;
 }
 
 void selectFrontWheel() {
 
-    if (leftSpeed >= rightSpeed)
-        {
-            frontSpeed = leftSpeed;
-        }
-        else
-        {
-            frontSpeed = rightSpeed;
-        }
+  if (leftSpeed >= rightSpeed) {
+    frontSpeed = leftSpeed;
+  } else {
+    frontSpeed = rightSpeed;
+  }
 }
 
 void adjustSpeed() {
 
-    float diff = abs(rearSpeed - frontSpeed);
+  float diff = abs(rearSpeed - frontSpeed);
 
-    if (diff > 5.0)
-    {
+  if (diff > 5.0) {
 
-    }
-    else if (diff > 9.0)
-    {
-        ig = 1;
-    }
-    else
-    {
-        ig = 0;
-    }   
-
+  } else if (diff > 9.0) {
+    ig = 1;
+  } else {
+    ig = 0;
+  }
 }
 
+int main() {
 
-int main()
-{
+  ig = 0;
+  setInitialStates();
 
-    ig = 0;
-    setInitialStates();
+  testTimer.reset();
+  testTimer.start();
 
-    while (1)
-    {
+  int num = 0;
 
-        right_triggered();
-        left_triggered();
-        rear_triggered();
+  right.mode(PullUp);
+  left.mode(PullUp);
+  rear.mode(PullUp);
 
-        selectFrontWheel();  //checks if left or right wheel is faster
-        adjustSpeed();   //cuts engine based on difference of wheel speeds
+  while (1) {
+    // only read the inputs once per loop to save cycles
+    int rightCurrent = right.read();
+    int leftCurrent = left.read();
+    int rearCurrent = rear.read();
 
-
+    if (rightCurrent == 1 && rightPrev == 0) {
+      right_triggered();
+      rightPrev = rightCurrent;
     }
+
+    if (leftCurrent == 1 && leftPrev == 0) {
+      left_triggered();
+      leftPrev = leftCurrent;
+    }
+
+    if (rearCurrent == 1 && rearPrev == 0) {
+      rear_triggered();
+      rearPrev = rearCurrent;
+    }
+
+    if (leftSpeed >= rightSpeed) {
+      frontSpeed = leftSpeed;
+    } else {
+      frontSpeed = rightSpeed;
+    }
+
+    num++;
+    if (testTimer.read() >= 1) {
+      printf("\ndone\n");
+      printf("\n%d\n", num);
+      break;
+    }
+  }
 }
