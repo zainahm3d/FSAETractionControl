@@ -1,0 +1,45 @@
+{
+    "name": "FastPWM", 
+    "repository": {
+        "url": "https://developer.mbed.org/users/Sissors/code/FastPWM/", 
+        "type": "hg"
+    }, 
+    "platforms": [
+        "freescalekinetis", 
+        "nordicnrf51", 
+        "nxplpc", 
+        "ststm32", 
+        "teensy"
+    ], 
+    "frameworks": [
+        "mbed"
+    ], 
+    "version": "3c8a0d977b", 
+    "examples": [
+        "https://developer.mbed.org/users/geotec/code/PwmOscillator/", 
+        "https://developer.mbed.org/users/daapp/code/FastStepDriver/", 
+        "https://developer.mbed.org/users/Spencer/code/TLC5940/", 
+        "https://developer.mbed.org/users/sampullman/code/CameraTest/", 
+        "https://developer.mbed.org/users/HMFK03LST1/code/H2M_2014_race/", 
+        "https://developer.mbed.org/users/acracan/code/BLDC_control/", 
+        "https://developer.mbed.org/users/jzeeff/code/espresso-machine-control/", 
+        "https://developer.mbed.org/users/Josvth/code/Eavesdropper/", 
+        "https://developer.mbed.org/users/dudanian/code/TLC5940Servo/", 
+        "https://developer.mbed.org/users/Clemo/code/kinetisizer/"
+    ], 
+    "authors": [
+        {
+            "url": "https://developer.mbed.org/users/Sissors/", 
+            "maintainer": false, 
+            "email": null, 
+            "name": "Erik Olieman"
+        }
+    ], 
+    "keywords": [
+        "pwm", 
+        "resolution", 
+        "speed"
+    ], 
+    "id": 199, 
+    "description": "Library that allows for higher resolution and speed than standard mbed PWM library using same syntax (drop-in replacement)."
+}

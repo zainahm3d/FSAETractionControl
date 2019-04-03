@@ -3,7 +3,6 @@
 InterruptIn left(D3);
 InterruptIn right(D4); //d4
 InterruptIn rear(D12);
-
 PwmOut ignitionOut(D5);
 
 #define ledpin LED3
@@ -31,7 +30,7 @@ DigitalOut out(ledpin);
 Timer tf1;
 Timer tf2;
 Timer r;
-//Timer accelTimer;
+// Timer accelTimer;
 
 long time1 = 1;
 long time2 = 1;
@@ -51,8 +50,6 @@ double calculateSpeed(double ticks, int micros);
 
 void right_triggered()
 {
-
-    out = !out;
 
     if (tf1.read() > 2.5)
     {
@@ -87,7 +84,11 @@ void right_triggered()
 void left_triggered()
 {
 
-    out = !out;
+    if (leftCount == 0)
+    {
+        tf2.start();
+        leftCount++;
+    }
 
     if (tf2.read() > 2.5)
     {
@@ -122,7 +123,11 @@ void left_triggered()
 void rear_triggered()
 {
 
-    out = !out;
+    if (rearCount == 0)
+    {
+        r.start();
+        rearCount++;
+    }
 
     if (r.read() > 2.5)
     {
@@ -186,7 +191,7 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 
     double accel = (newSpeed - prev)/(t2);
 
-    return accel; 
+    return accel;
 }
 */
 
