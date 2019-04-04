@@ -1,95 +1,119 @@
 // ROTATING BUFFER TEST
 // MEMORY WRITE TEST
-
-#include "PID.h"
 #include <mbed.h>
 
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D12);
-PwmOut ignitionOut(D5);
+// PwmOut ignitionOut(D5);
 
-#define Pi 3.1415
+// Prototypes
+void right_triggered();
+void left_triggered();
+void rear_triggered();
 
-const double diameter = 1.3333333; // in feet
-const double radius = 0.666666;    // in feet
-const double circ = diameter * Pi;
+const int BUFF_SIZE = 10;
 
-double rightSpeed = 0;
-double leftSpeed = 0;
-double rearSpeed = 0;
+// Tire Spec (in feet)
+const double circumference = 4.189;
 
-// Rotating tickTime buffer
-double rightTickBuffer[10];
-double leftTickBuffer[10];
-double rearTickBuffer[10];
+long rightTickBuff[BUFF_SIZE];
+long leftTickBuff[BUFF_SIZE];
+long rearTickBuff[BUFF_SIZE];
 
-int PWMFreqStorage[1000];
-double speedDeltaStorage[1000];
+double rightSpeed = 0.0;
+double leftSpeed = 0.0;
+double rearSpeed = 0.0;
 
-double frontSpeed = 0;
-
-unsigned short delta = 0;
-unsigned char highByte = 0;
-unsigned char lowByte = 0;
+Timer tRight;
+Timer tLeft;
+Timer tRear;
 
 DigitalOut led(LED1);
 
-// CAN can1(D10, D2); // CAN bus pins
-PID controller(1.0, 2.0, 2.0, 0.02); // this is undercompensating
-
-Timer rightTimer;
-Timer leftTimer;
-Timer rearTimer;
-
-int rightCount = 0;
-int leftCount = 0;
-int rearCount = 0;
-
-double speed;
-
-double calculateSpeed(double ticks, int micros);
-
-void writeToFlash();
-
-// ISRs
-void right_triggered() {}
-
-void left_triggered() {}
-
-void rear_triggered() {}
+// Function Prototypes
+double calcSpeed(long inputBuf[], int ticksPerRev);
+void addToBuffer(long inputBuf[], long val);
+void printArray(long buf[]);
 
 int main() {
   left.mode(PullUp);
   right.mode(PullUp);
   rear.mode(PullUp);
 
-  right.rise(&right_triggered);
-  left.rise(&left_triggered);
+  right.fall(&right_triggered);
+  left.fall(&left_triggered);
   rear.fall(&rear_triggered);
 
-  ignitionOut.period_ms(1000); // 1 second
-  ignitionOut.write(0.5);
-
   while (1) {
+    rightSpeed = calcSpeed(rightTickBuff, 25);
+    leftSpeed = calcSpeed(leftTickBuff, 25);
+    rearSpeed = calcSpeed(rearTickBuff, 100);
   }
 }
 
-double calculateSpeed(double ticks, int micros) {
+// ----- Methods -----
 
-  double revs;
-  double speed;
-  double seconds = micros / 1000000.0;
+// ISRs
+void right_triggered() {
+  tRight.stop();
+  addToBuffer(rightTickBuff, tRight.read_us());
+  tRight.reset();
+  tRight.start();
 
-  double ticksPerSecond = (ticks / seconds); // ticks per second
+  led = !led;
+}
 
-  if (ticks == 5) {
-    revs = ticksPerSecond / 25.0; // revs per second
-  } else {
-    revs = ticksPerSecond / 100.0;
+void left_triggered() {
+  tLeft.stop();
+  addToBuffer(leftTickBuff, tLeft.read_us());
+  tLeft.reset();
+  tLeft.start();
+
+  led = !led;
+}
+
+void rear_triggered() {
+  tRear.stop();
+  addToBuffer(rearTickBuff, tRear.read_us());
+  tRear.reset();
+  tRear.start();
+
+  led = !led;
+}
+
+// Calculates speed in MPH based on 5 ticks
+// Returns speed as a double
+// Specify ticks per rev (25 for front, 100 for rear)
+double calcSpeed(long inputBuf[], int ticksPerRev) {
+  long double buffTotal = 0.0;
+
+  // Always only use the last 5 parts of the buffer
+  for (int i = BUFF_SIZE - 5; i < BUFF_SIZE; i++) {
+    buffTotal += (long double)inputBuf[i];
   }
 
-  speed = revs * 2.8553; // Magic number
+  // Calculate the wheelspeed using the square wave freq
+  double avgTickPeriod = (buffTotal / 5.0) / 1000000.0;
+  double avgTickFreq = 1.0 / avgTickPeriod; // In HZ
+  double wheelRPM = avgTickFreq / (double)ticksPerRev;
+  // double speedFPS = avgTickFreq * circumference;
+  double speedMPH = wheelRPM * 2.8553; // Magic number
+  return speedMPH;
+}
 
-  return speed;
+// Shift values in the buffer over 1
+// Add in the new value to buf[BUFF_SIZE]
+void addToBuffer(long inputBuf[], long val) {
+  for (int i = 0; i < BUFF_SIZE - 1; i++) {
+    inputBuf[i] = inputBuf[i + 1];
+  }
+  inputBuf[BUFF_SIZE - 1] = val;
+}
+
+// Prints out the buffer arrays
+void printArray(long buf[]) {
+  for (int i = 0; i < BUFF_SIZE; i++) {
+    printf("% ld", buf[i]);
+  }
 }
