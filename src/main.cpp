@@ -1,11 +1,6 @@
 // ROTATING BUFFER TEST
-// MEMORY WRITE TEST
-#include <mbed.h>
 
-InterruptIn left(D3);
-InterruptIn right(D4);
-InterruptIn rear(D12);
-// PwmOut ignitionOut(D5);
+#include <mbed.h>
 
 // Prototypes
 void right_triggered();
@@ -24,31 +19,56 @@ long rearTickBuff[BUFF_SIZE];
 double rightSpeed = 0.0;
 double leftSpeed = 0.0;
 double rearSpeed = 0.0;
+double groundSpeed = 0.0; // Fastest front
 
 Timer tRight;
 Timer tLeft;
 Timer tRear;
 
 DigitalOut led(LED1);
+InterruptIn left(D3);
+InterruptIn right(D4);
+InterruptIn rear(D5);
+Serial ser(D1, D0);
+// PwmOut ignitionOut(D5);
 
 // Function Prototypes
 double calcSpeed(long inputBuf[], int ticksPerRev);
 void addToBuffer(long inputBuf[], long val);
 void printArray(long buf[]);
+void wipeBuffers();
 
 int main() {
-  left.mode(PullUp);
-  right.mode(PullUp);
-  rear.mode(PullUp);
+  ser.baud(115200);
 
-  right.fall(&right_triggered);
-  left.fall(&left_triggered);
-  rear.fall(&rear_triggered);
+  left.mode(PullDown);
+  right.mode(PullDown);
+  rear.mode(PullDown);
+
+  right.rise(&right_triggered);
+  left.rise(&left_triggered);
+  rear.rise(&rear_triggered);
 
   while (1) {
+    wait(.25);
     rightSpeed = calcSpeed(rightTickBuff, 25);
     leftSpeed = calcSpeed(leftTickBuff, 25);
     rearSpeed = calcSpeed(rearTickBuff, 100);
+
+    if (rightSpeed > leftSpeed) {
+      groundSpeed = rightSpeed;
+    } else {
+      groundSpeed = leftSpeed;
+    }
+
+    if (tRight.read() > 0.5 && tLeft.read() > 0.5) {
+      wipeBuffers();
+    }
+
+    // printf("\nFront Speed: %.2f MPH", groundSpeed);
+    // printf("\nRear Speed: %.2f MPH\n", rearSpeed);
+    ser.printf("\nFront Speed: %.2f MPH", groundSpeed);
+    ser.printf("\nRear Speed: %.2f MPH\n", rearSpeed);
   }
 }
 
@@ -99,6 +119,11 @@ double calcSpeed(long inputBuf[], int ticksPerRev) {
   double wheelRPM = avgTickFreq / (double)ticksPerRev;
   // double speedFPS = avgTickFreq * circumference;
   double speedMPH = wheelRPM * 2.8553; // Magic number
+
+  if (speedMPH > 150) {
+    speedMPH = 0;
+  }
+
   return speedMPH;
 }
 
@@ -115,5 +140,13 @@ void addToBuffer(long inputBuf[], long val) {
 void printArray(long buf[]) {
   for (int i = 0; i < BUFF_SIZE; i++) {
     printf("% ld", buf[i]);
+  }
+}
+
+void wipeBuffers() {
+  for (int i = 0; i < BUFF_SIZE; i++) {
+    rightTickBuff[i] = 0;
+    leftTickBuff[i] = 0;
+    rearTickBuff[i] = 0;
   }
 }
