@@ -1,7 +1,7 @@
 #include <mbed.h>
 
 InterruptIn left(D3);
-InterruptIn right(D4); //d4
+InterruptIn right(D4);
 InterruptIn rear(D12);
 PwmOut ignitionOut(D5);
 
@@ -24,8 +24,8 @@ unsigned char lowByte = 0;
 
 DigitalOut out(ledpin);
 
-//CAN can1(D10, D2); // CAN bus pins
-//PID controller(1.0, 0.0, 0.0, 0.01);
+// CAN can1(D10, D2); // CAN bus pins
+// PID controller(1.0, 0.0, 0.0, 0.01);
 
 Timer tf1;
 Timer tf2;
@@ -42,146 +42,126 @@ int rearCount = 0;
 
 double speed;
 
-//Serial device(D5, D4);
+Serial ser(D1, D0);
 
 //////////////////////////////////////////////////////
 
 double calculateSpeed(double ticks, int micros);
 
-void right_triggered()
-{
+void right_triggered() {
 
-    if (tf1.read() > 2.5)
-    {
-        tf1.reset();
-        rightSpeed = 0;
-        rightCount = 0;
-    }
+  out = !out;
 
-    if (rightCount == 0)
-    {
-        tf1.start();
-        rightCount++;
-    }
+  if (tf1.read() > 2.5) {
+    tf1.reset();
+    rightSpeed = 0;
+    rightCount = 0;
+  }
 
-    else if (rightCount == 5)
-    {
+  if (rightCount == 0) {
+    tf1.start();
+    rightCount++;
+  }
 
-        tf1.stop();
+  else if (rightCount == 5) {
 
-        time1 = tf1.read_us();
-        rightSpeed = calculateSpeed(5.0, time1);
+    tf1.stop();
 
-        rightCount = 0;
-        tf1.reset();
-    }
-    else
-    {
-        rightCount++;
-    }
+    time1 = tf1.read_us();
+    rightSpeed = calculateSpeed(5.0, time1);
+
+    rightCount = 0;
+    tf1.reset();
+  } else {
+    rightCount++;
+  }
 }
 
-void left_triggered()
-{
+void left_triggered() {
 
-    if (leftCount == 0)
-    {
-        tf2.start();
-        leftCount++;
-    }
+  out = !out;
 
-    if (tf2.read() > 2.5)
-    {
-        r.reset();
-        leftSpeed = 0;
-        leftCount = 0;
-    }
+  if (leftCount == 0) {
+    tf2.start();
+    leftCount++;
+  }
 
-    if (leftCount == 0)
-    {
-        tf2.start();
-        leftCount++;
-    }
+  if (tf2.read() > 2.5) {
+    r.reset();
+    leftSpeed = 0;
+    leftCount = 0;
+  }
 
-    else if (leftCount == 5)
-    {
+  if (leftCount == 0) {
+    tf2.start();
+    leftCount++;
+  }
 
-        tf2.stop();
+  else if (leftCount == 5) {
 
-        time2 = tf2.read_us();
-        leftSpeed = calculateSpeed(5.0, time2);
+    tf2.stop();
 
-        leftCount = 0;
-        tf2.reset();
-    }
-    else
-    {
-        leftCount++;
-    }
+    time2 = tf2.read_us();
+    leftSpeed = calculateSpeed(5.0, time2);
+
+    leftCount = 0;
+    tf2.reset();
+  } else {
+    leftCount++;
+  }
 }
 
-void rear_triggered()
-{
+void rear_triggered() {
 
-    if (rearCount == 0)
-    {
-        r.start();
-        rearCount++;
-    }
+  if (rearCount == 0) {
+    r.start();
+    rearCount++;
+  }
 
-    if (r.read() > 2.5)
-    {
-        r.reset();
-        rearCount = 0;
-        rearSpeed = 0;
-    }
+  if (r.read() > 2.5) {
+    r.reset();
+    rearCount = 0;
+    rearSpeed = 0;
+  }
 
-    if (rearCount == 0)
-    {
-        r.start();
-        rearCount++;
-    }
+  if (rearCount == 0) {
+    r.start();
+    rearCount++;
+  }
 
-    else if (rearCount == 25)
-    {
+  else if (rearCount == 25) {
 
-        r.stop();
+    r.stop();
 
-        time3 = r.read_us();
-        rearSpeed = calculateSpeed(25.0, time3);
-        //rearAccel = calculateAcceleration(prev, speed, time3);
+    time3 = r.read_us();
+    rearSpeed = calculateSpeed(25.0, time3);
+    // rearAccel = calculateAcceleration(prev, speed, time3);
 
-        rearCount = 0;
-        r.reset();
-    }
-    else
-    {
-        rearCount++;
-    }
+    rearCount = 0;
+    r.reset();
+  } else {
+    rearCount++;
+  }
 }
 
-double calculateSpeed(double ticks, int micros)
-{
+double calculateSpeed(double ticks, int micros) {
 
-    double revs;
-    double speed;
-    double seconds = micros / 1000000.0;
+  double revs;
+  double speed;
+  double seconds = micros / 1000000.0;
 
-    double ticksPerSecond = (ticks / seconds); // ticks per second
+  double ticksPerSecond = (ticks / seconds); // ticks per second
 
-    if (ticks == 5)
-    {
-        revs = ticksPerSecond / 25.0; //revs per second
-    }
-    else
-    {
-        revs = ticksPerSecond / 100.0;
-    }
+  if (ticks == 5) {
+    revs = ticksPerSecond / 25.0; // revs per second
+  } else {
+    revs = ticksPerSecond / 100.0;
+  }
 
-    speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear speed
-                           // (wheel size dependent)
+  speed = revs * 2.8553; // 2.8553 is the number that converts rev/s to linear
+                         // speed (wheel size dependent)
 
-    return speed;
+  return speed;
 }
 
 /*
@@ -195,109 +175,95 @@ double calculateAcceleration(double prev, double newSpeed, double t) {
 }
 */
 
-int main()
-{
+int main() {
 
-    //float pidResult = 1.0;
-    printf("%s\n", "sup");
+  // float pidResult = 1.0;
+  printf("%s\n", "sup");
 
-    left.mode(PullUp);
-    right.mode(PullUp);
-    rear.mode(PullUp);
+  left.mode(PullUp);
+  right.mode(PullUp);
+  rear.mode(PullUp);
 
-    right.rise(&right_triggered);
-    left.rise(&left_triggered);
-    rear.fall(&rear_triggered);
+  right.rise(&right_triggered);
+  left.rise(&left_triggered);
+  rear.fall(&rear_triggered);
 
-    //controller.setInputLimits(0.0, 40.0);
-    //controller.setOutputLimits(1.0, 1000.0);
-    //controller.setMode(1); //auto mode
-    //controller.setTunings(3.0,10.0,1.0);
+  // controller.setInputLimits(0.0, 40.0);
+  // controller.setOutputLimits(1.0, 1000.0);
+  // controller.setMode(1); //auto mode
+  // controller.setTunings(3.0,10.0,1.0);
 
-    //controller.setSetPoint(0.0);
+  // controller.setSetPoint(0.0);
 
-    //ignitionOut.period_ms(1000);
-    // ignitionOut.write(0.5);
+  // ignitionOut.period_ms(1000);
+  // ignitionOut.write(0.5);
 
-    //device.baud(9600);
+  ser.baud(115200);
+  ser.printf("\nAlive\n");
 
-    //device.printf("%s\n", "Sup");
-    //device.printf("%s\n", "Sup");
+  ignitionOut.period(1.0);
+  ignitionOut.write(0.5);
 
-    ignitionOut.period(1.0);
-    ignitionOut.write(0.5);
+  while (1) {
+    // device.printf("Hi\n");
 
-    while (1)
-    {
-        // device.printf("Hi\n");
+    wait_ms(250);
 
-        wait_ms(200);
+    // printf("%s", "Rear speed: ");
+    // printf("%f\n", rearSpeed);
+    // printf("%s", "Left speed: ");
+    // printf("%f\n", leftSpeed);
+    // printf("%s", "Right speed: ");
+    // printf("%f\n", rightSpeed);
 
-        printf("%s", "Rear speed: ");
-        printf("%f\n", rearSpeed);
-        printf("%s", "Left speed: ");
-        printf("%f\n", leftSpeed);
-        printf("%s", "Right speed: ");
-        printf("%f\n", rightSpeed);
-
-        if (leftSpeed >= rightSpeed)
-        {
-            frontSpeed = leftSpeed;
-        }
-        else
-        {
-            frontSpeed = rightSpeed;
-        }
-        printf("%s", "Front speed: ");
-        printf("%f\n\n", frontSpeed);
-        //device.printf("%s\n", frontSpeed);
-
-        /*
-        delta = (frontSpeed / rearSpeed) *100;
-        printf("%f\n",delta);
-        highByte = (delta >> 8) & 0xFF;
-        lowByte = delta & 0xFF;
-        */
-
-        float diff = abs(rearSpeed - frontSpeed);
-
-        if (frontSpeed < 2.0)
-        {
-
-            ignitionOut.period(1.0);
-            ignitionOut.write(0.5);
-        }
-
-        // {
-
-        // printf("%f\n", diff);
-        // controller.setProcessValue(diff);
-        // pidResult = controller.compute();
-
-        //printf("%f\n\n", pidResult);
-        //float freq = pidResult;
-        // float period = 1.0 / freq;
-        //printf("%f\n", freq);
-        //printf("%f\n", period);
-
-        //  ignitionOut.period(period);
-        // ignitionOut.write(0.5);
-        // }
-
-        else if (diff >= 10.0)
-        {
-            ignitionOut.period(.002);
-            ignitionOut.write(.5);
-        }
-        else if (diff >= 20)
-        {
-            ignitionOut.period(.001);
-            ignitionOut.write(.5);
-        }
-        else
-        {
-            ignitionOut.period(3);
-            ignitionOut.write(.5);
-        }
+    if (leftSpeed >= rightSpeed) {
+      frontSpeed = leftSpeed;
+    } else {
+      frontSpeed = rightSpeed;
     }
+    // printf("%s", "Front speed: ");
+    // printf("%f\n\n", frontSpeed);
+
+    ser.printf("\nRear speed: ");
+    ser.printf("%f\n", rearSpeed);
+    ser.printf("Left speed: ");
+    ser.printf("%f\n", leftSpeed);
+    ser.printf("Right speed: ");
+    ser.printf("%f\n", rightSpeed);
+
+    float diff = abs(rearSpeed - frontSpeed);
+
+    // if (frontSpeed < 2.0) {
+
+    //   ignitionOut.period(1.0);
+    //   ignitionOut.write(0.5);
+    // }
+
+    // {
+
+    // printf("%f\n", diff);
+    // controller.setProcessValue(diff);
+    // pidResult = controller.compute();
+
+    // printf("%f\n\n", pidResult);
+    // float freq = pidResult;
+    // float period = 1.0 / freq;
+    // printf("%f\n", freq);
+    // printf("%f\n", period);
+
+    //  ignitionOut.period(period);
+    // ignitionOut.write(0.5);
+    // }
+
+    // else if (diff >= 10.0) {
+    //   ignitionOut.period(.002);
+    //   ignitionOut.write(.5);
+    // } else if (diff >= 20) {
+    //   ignitionOut.period(.001);
+    //   ignitionOut.write(.5);
+    // } else {
+    //   ignitionOut.period(3);
+    //   ignitionOut.write(.5);
+    // }
+  }
 }
