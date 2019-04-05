@@ -9,9 +9,6 @@ void rear_triggered();
 
 const int BUFF_SIZE = 10;
 
-// Tire Spec (in feet)
-const double circumference = 4.189;
-
 long rightTickBuff[BUFF_SIZE];
 long leftTickBuff[BUFF_SIZE];
 long rearTickBuff[BUFF_SIZE];
@@ -25,12 +22,16 @@ Timer tRight;
 Timer tLeft;
 Timer tRear;
 
+// GPIOs
 DigitalOut led(LED1);
+
 InterruptIn left(D3);
 InterruptIn right(D4);
 InterruptIn rear(D5);
+
 Serial ser(D1, D0);
-// PwmOut ignitionOut(D5);
+
+PwmOut ignitionOut(D6);
 
 // Function Prototypes
 double calcSpeed(long inputBuf[], int ticksPerRev);
@@ -41,16 +42,17 @@ void wipeBuffers();
 int main() {
   ser.baud(115200);
 
-  left.mode(PullDown);
-  right.mode(PullDown);
-  rear.mode(PullDown);
+  right.mode(PullUp);
+  left.mode(PullUp);
+  rear.mode(PullUp);
 
-  right.rise(&right_triggered);
-  left.rise(&left_triggered);
-  rear.rise(&rear_triggered);
+  right.fall(&right_triggered);
+  left.fall(&left_triggered);
+  rear.fall(&rear_triggered);
 
   while (1) {
-    wait(.25);
+    wait_ms(250);
+
     rightSpeed = calcSpeed(rightTickBuff, 25);
     leftSpeed = calcSpeed(leftTickBuff, 25);
     rearSpeed = calcSpeed(rearTickBuff, 100);
@@ -65,8 +67,6 @@ int main() {
       wipeBuffers();
     }
 
-    // printf("\nFront Speed: %.2f MPH", groundSpeed);
-    // printf("\nRear Speed: %.2f MPH\n", rearSpeed);
     ser.printf("\nFront Speed: %.2f MPH", groundSpeed);
     ser.printf("\nRear Speed: %.2f MPH\n", rearSpeed);
   }
