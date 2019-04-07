@@ -1,14 +1,6 @@
-// ROTATING BUFFER TEST
-
 #include <mbed.h>
 
-// Prototypes
-void right_triggered();
-void left_triggered();
-void rear_triggered();
-
 const int BUFF_SIZE = 10;
-
 long rightTickBuff[BUFF_SIZE];
 long leftTickBuff[BUFF_SIZE];
 long rearTickBuff[BUFF_SIZE];
@@ -38,10 +30,12 @@ double calcSpeed(long inputBuf[], int ticksPerRev);
 void addToBuffer(long inputBuf[], long val);
 void printArray(long buf[]);
 void wipeBuffers();
+void right_triggered();
+void left_triggered();
+void rear_triggered();
 
 int main() {
-  ser.baud(115200);
-
+  ser.baud(9600);
   right.mode(PullUp);
   left.mode(PullUp);
   rear.mode(PullUp);
@@ -51,7 +45,7 @@ int main() {
   rear.fall(&rear_triggered);
 
   while (1) {
-    wait_ms(250);
+    wait_ms(50);
 
     rightSpeed = calcSpeed(rightTickBuff, 25);
     leftSpeed = calcSpeed(leftTickBuff, 25);
@@ -67,8 +61,12 @@ int main() {
       wipeBuffers();
     }
 
-    ser.printf("\nFront Speed: %.2f MPH", groundSpeed);
-    ser.printf("\nRear Speed: %.2f MPH\n", rearSpeed);
+    // ser.printf("\n\rFront Speed: %.2f MPH", groundSpeed);
+    // ser.printf("\n\rRear Speed: %.2f MPH\n", rearSpeed);
+
+    // XBee data logger
+    ser.printf("\nF%.2f", groundSpeed);
+    ser.printf("\nR%.2f", rearSpeed);
   }
 }
 
@@ -127,7 +125,7 @@ double calcSpeed(long inputBuf[], int ticksPerRev) {
   return speedMPH;
 }
 
-// Shift values in the buffer over 1
+// Shift values in the buffer left 1
 // Add in the new value to buf[BUFF_SIZE]
 void addToBuffer(long inputBuf[], long val) {
   for (int i = 0; i < BUFF_SIZE - 1; i++) {
