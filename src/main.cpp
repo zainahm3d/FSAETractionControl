@@ -28,7 +28,7 @@ PwmOut ignitionOut(D6);
 // Function Prototypes
 double calcSpeed(long inputBuf[], int ticksPerRev);
 void addToBuffer(long inputBuf[], long val);
-void printArray(long buf[]);
+void printArray(long inputBuf[]);
 void wipeBuffers();
 void right_triggered();
 void left_triggered();
@@ -141,9 +141,9 @@ void addToBuffer(long inputBuf[], long val) {
 }
 
 // Prints out the buffer arrays
-void printArray(long buf[]) {
+void printArray(long inputBuf[]) {
   for (int i = 0; i < BUFF_SIZE; i++) {
-    printf("% ld", buf[i]);
+    printf("% ld", inputBuf[i]);
   }
 }
 
