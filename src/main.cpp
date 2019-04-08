@@ -61,10 +61,16 @@ int main() {
       wipeBuffers();
     }
 
+    // USB prints
+    // printf("\n\rFront Speed: %.2f MPH", groundSpeed);
+    // printf("\n\rRear Speed: %.2f MPH\n", rearSpeed);
+
+    // ESP32 printing
     // ser.printf("\n\rFront Speed: %.2f MPH", groundSpeed);
     // ser.printf("\n\rRear Speed: %.2f MPH\n", rearSpeed);
 
-    // XBee data logger
+    // XBee data logger sends Fxx.yy or Rxx.yy
+    // F = front, R = rear
     ser.printf("\nF%.2f", groundSpeed);
     ser.printf("\nR%.2f", rearSpeed);
   }
